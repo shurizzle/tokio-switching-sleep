@@ -1,3 +1,21 @@
+//! This crate contains two objects: [`SwitchingSleep`] and [`ASwitchingSleep`].
+//!
+//! [`ASwitchingSleep`] is just a wrapper around
+//! [`Arc`](struct@std::sync::Arc)<[`RwLock`](struct@tokio::sync::RwLock)<[`SwitchingSleep`]>>.
+//!
+//! They are a [`tokio::time::Sleep`](struct@tokio::time::Sleep) with a
+//! switchable state. When you call the [`start`](SwitchingSleep::start())
+//! method a [`Sleep`] is crated, when you call the [`stop`](SwitchingSleep::stop())
+//! one the current [`Sleep`] is dropped. So calling
+//! [`start`](SwitchingSleep::start()) will reset the timer.
+//!
+//! The timer will complete after the `duration` time since
+//! [`start`](SwitchingSleep::start()) method is called (or
+//! [`new_start`](SwitchingSleep::new_start()), [`new`](SwitchingSleep::new()) + [`start`](SwitchingSleep::start())).
+//!
+//! [SwitchingSleep]: struct@SwitchingSleep
+//! [Sleep]: struct@tokio::time::Sleep
+
 use std::{
     fmt::Debug,
     future::Future,
@@ -12,6 +30,7 @@ use tokio::{
     time::{sleep, Sleep},
 };
 
+/// The [`!Sync`][trait@std::marker::Sync] one.
 #[derive(Debug)]
 pub struct SwitchingSleep {
     period: Duration,
@@ -21,6 +40,7 @@ pub struct SwitchingSleep {
 }
 
 impl SwitchingSleep {
+    /// Create a new [`SwitchingSleep`] and doesn't start the timer.
     pub fn new(period: Duration) -> Self {
         let (tx, rx) = broadcast::channel(10);
 
@@ -32,12 +52,14 @@ impl SwitchingSleep {
         }
     }
 
+    /// Create a new [`SwitchingSleep`] and start the timer.
     pub fn new_start(period: Duration) -> Self {
         let mut me = Self::new(period);
         me.start();
         me
     }
 
+    /// Start the timer. Reset if already started.
     pub fn start(&mut self) {
         if !self.is_elapsed() {
             self.stop();
@@ -47,6 +69,7 @@ impl SwitchingSleep {
         }
     }
 
+    /// Stop the timer. It doesn nothing if already stopped.
     pub fn stop(&mut self) {
         if !self.is_elapsed() {
             match self.sleeper.take() {
@@ -58,6 +81,7 @@ impl SwitchingSleep {
         }
     }
 
+    /// Check if the timer (if any) is elapsed.
     pub fn is_elapsed(&self) -> bool {
         self.sleeper.is_some() && (&self.sleeper).as_ref().unwrap().is_elapsed()
     }
@@ -97,30 +121,36 @@ impl Future for SwitchingSleep {
     }
 }
 
+/// The [`Sync`][trait@std::marker::Sync] one.
 #[derive(Debug)]
 pub struct ASwitchingSleep(Arc<RwLock<SwitchingSleep>>);
 
 impl ASwitchingSleep {
+    /// Create a new [`ASwitchingSleep`] and doesn't start the timer.
     pub fn new(period: Duration) -> Self {
         Self(Arc::new(RwLock::new(SwitchingSleep::new(period))))
     }
 
+    /// Create a new [`ASwitchingSleep`] and start the timer.
     pub async fn new_start(period: Duration) -> Self {
         let me = Self::new(period);
         me.start().await;
         me
     }
 
+    /// Start the timer. Reset if already started.
     pub async fn start(&self) {
         let mut inner = self.0.write().await;
         inner.start()
     }
 
+    /// Stop the timer. It doesn nothing if already stopped.
     pub async fn stop(&self) {
         let mut inner = self.0.write().await;
         inner.stop()
     }
 
+    /// Check if the timer (if any) is elapsed.
     pub async fn is_elapsed(&self) -> bool {
         let inner = self.0.read().await;
         inner.is_elapsed()
