@@ -32,6 +32,12 @@ impl SwitchingSleep {
         }
     }
 
+    pub fn new_start(period: Duration) -> Self {
+        let mut me = Self::new(period);
+        me.start();
+        me
+    }
+
     pub fn start(&mut self) {
         if !self.is_elapsed() {
             self.stop();
@@ -97,6 +103,12 @@ pub struct ASwitchingSleep(Arc<RwLock<SwitchingSleep>>);
 impl ASwitchingSleep {
     pub fn new(period: Duration) -> Self {
         Self(Arc::new(RwLock::new(SwitchingSleep::new(period))))
+    }
+
+    pub async fn new_start(period: Duration) -> Self {
+        let me = Self::new(period);
+        me.start().await;
+        me
     }
 
     pub async fn start(&self) {
