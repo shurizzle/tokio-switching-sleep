@@ -1,9 +1,17 @@
 [package]
 name = "tokio-switching-sleep"
+description = "A tokio Sleep with a switchable state."
 version = "0.1.0"
 edition = "2018"
 license = "WTFPL"
 readme = "README.md"
+authors = ["shurizzle <me@shurizzle.me>"]
+repository = "https://github.com/shurizzle/tokio-switching-sleep"
+homepage = "https://github.com/shurizzle/tokio-switching-sleep"
+license-file = "LICENSE"
+keywords = ["tokio", "sleep", "future"]
+categories = ["asynchronous", "algorithms", "concurrency"]
+documentation = "https://docs.rs/tokio-switching-sleep"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
