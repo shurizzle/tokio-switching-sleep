@@ -4,17 +4,19 @@
 //! [`Arc`](struct@std::sync::Arc)<[`RwLock`](struct@tokio::sync::RwLock)<[`SwitchingSleep`]>>.
 //!
 //! They are a [`tokio::time::Sleep`](struct@tokio::time::Sleep) with a
-//! switchable state. When you call the [`start`](SwitchingSleep::start())
-//! method a [`Sleep`] is crated, when you call the [`stop`](SwitchingSleep::stop())
-//! one the current [`Sleep`] is dropped. So calling
-//! [`start`](SwitchingSleep::start()) will reset the timer.
+//! switchable state. When you call the [`start`] method a [`Sleep`] is created,
+//! when you call the [`stop`] one the current [`Sleep`] is dropped. So calling
+//! [`start`] will reset the timer.
 //!
 //! The timer will complete after the `duration` time since
-//! [`start`](SwitchingSleep::start()) method is called (or
-//! [`new_start`](SwitchingSleep::new_start()), [`new`](SwitchingSleep::new()) + [`start`](SwitchingSleep::start())).
+//! [`start`] method is called (or [`new_start`], [`new`] + [`start`]).
 //!
 //! [SwitchingSleep]: struct@SwitchingSleep
 //! [Sleep]: struct@tokio::time::Sleep
+//! [`start`]: SwitchingSleep::start()
+//! [`stop`]: SwitchingSleep::stop()
+//! [`new_start`]: SwitchingSleep::new_start()
+//! [`new`]: SwitchingSleep::new()
 
 use std::{
     fmt::Debug,
@@ -38,6 +40,8 @@ pub struct SwitchingSleep {
     rx: broadcast::Receiver<()>,
     sleeper: Option<Sleep>,
 }
+
+impl Unpin for SwitchingSleep {}
 
 impl SwitchingSleep {
     /// Create a new [`SwitchingSleep`] and doesn't start the timer.
@@ -159,6 +163,7 @@ impl ASwitchingSleep {
 
 unsafe impl Send for ASwitchingSleep {}
 unsafe impl Sync for ASwitchingSleep {}
+impl Unpin for ASwitchingSleep {}
 
 impl Clone for ASwitchingSleep {
     fn clone(&self) -> Self {
